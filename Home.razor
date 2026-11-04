@@ -1,0 +1,83 @@
+﻿
+@page "/"
+@using System.Net.Http.Json
+@using SearchDemonSlayerAPI.Models
+@inject HttpClient Http
+
+<PageTitle>Personagens Demon Slayer</PageTitle>
+
+<h1>Personagens - Demon Slayer</h1>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="CarregarPersonagens" disabled="@carregando">
+        @(carregando ? "A carregar..." : "Carregar Personagens")
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(mensagemErro))
+{
+    <div class="alert alert-danger mt-3">@mensagemErro</div>
+}
+
+@if (personagens != null && personagens.Any())
+{
+    <div class="row mt-4">
+        @foreach (var c in personagens)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(c.img))
+                    {
+                        <img src="@c.img" class="card-img-top" alt="@c.name" style="max-height: 300px; object-fit: cover;" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@c.name</h5>
+                        <p class="card-text"><strong>Idade:</strong> @c.age</p>
+                        <p class="card-text"><strong>Raça:</strong> @c.race</p>
+                        @if (!string.IsNullOrEmpty(c.quote))
+                        {
+                            <p class="card-text"><em>"@c.quote"</em></p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Character>? personagens;
+    private string mensagemErro = string.Empty;
+    private bool carregando = false;
+
+    private async Task CarregarPersonagens()
+    {
+        mensagemErro = string.Empty;
+        personagens = null;
+
+        try
+        {
+            carregando = true;
+            var resposta = await Http.GetFromJsonAsync<CharacterResponse>("api/v1/characters?page=1");
+            
+            if (resposta != null)
+            {
+                personagens = resposta.content ?? resposta.data;
+            }
+            
+            if (personagens == null || !personagens.Any())
+            {
+                mensagemErro = "Nenhum personagem encontrado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao consultar a API: {ex.Message}";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+}
+
